@@ -1,13 +1,52 @@
+:root {
+  color-scheme: dark;
+  --bg-top: #071019;
+  --bg-mid: #0b1721;
+  --bg-bottom: #111d28;
+  --text-main: #f4f7fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  min-width: 320px;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at top left, rgba(255, 107, 107, 0.2), transparent 25%),
+    radial-gradient(circle at top right, rgba(17, 138, 178, 0.18), transparent 22%),
+    linear-gradient(160deg, var(--bg-top), var(--bg-mid) 42%, var(--bg-bottom));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at center, black, transparent 80%);
+}
+
+a,
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+#root {
+  position: relative;
+  isolation: isolate;
 }
