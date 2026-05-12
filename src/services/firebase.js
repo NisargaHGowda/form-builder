@@ -16,3 +16,6 @@ const app = initializeApp(firebaseConfig);
 
 // Connect Firestore
 export const db = getFirestore(app);
+
+/** For help links (e.g. Firestore Rules in console). */
+export const firebaseProjectId = firebaseConfig.projectId;

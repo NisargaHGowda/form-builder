@@ -1,5 +1,21 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { demoForm } from "../data/formData";
+import { firebaseProjectId } from "../services/firebase";
+import { subscribeToResponses } from "../services/submissions";
+import {
+  averageDurationLabel,
+  completionRatePercent,
+} from "../utils/aggregateAnalytics";
+
+const RULES_SAMPLE = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /forms/{formId}/responses/{responseId} {
+      allow read, write: if true;
+    }
+  }
+}`;
 
 const questionTypeLabel = {
   shortText: "Short text",
@@ -10,6 +26,30 @@ const questionTypeLabel = {
 };
 
 function BuilderPage() {
+  const [responses, setResponses] = useState([]);
+  const [firestoreError, setFirestoreError] = useState(null);
+
+  useEffect(() => {
+    const unsub = subscribeToResponses(
+      demoForm.id,
+      setResponses,
+      (err) => {
+        setFirestoreError(
+          err?.message ||
+            "Could not sync live stats. Check Firestore rules in the Firebase console."
+        );
+      }
+    );
+    return unsub;
+  }, []);
+
+  const liveStats = useMemo(() => {
+    const total = responses.length;
+    const completionRate = completionRatePercent(demoForm, responses);
+    const avgTime = averageDurationLabel(responses);
+    return { total, completionRate, avgTime };
+  }, [responses]);
+
   return (
     <main className="app-shell">
       <section className="hero-card">
@@ -28,6 +68,55 @@ function BuilderPage() {
         </div>
       </section>
 
+      {firestoreError ? (
+        <div
+          className="form-error form-error-banner"
+          role="status"
+        >
+          <strong>Database:</strong> {firestoreError}
+          {/permission|insufficient/i.test(firestoreError) ? (
+            <div className="firestore-help">
+              <p>
+                This almost always means Firestore <strong>security rules</strong> in
+                the Firebase project are still blocking reads/writes. Rules in your
+                repo file <code className="inline-code">firestore.rules</code> are
+                not active until you publish them.
+              </p>
+              <ol>
+                <li>
+                  Open{" "}
+                  <a
+                    href={`https://console.firebase.google.com/project/${firebaseProjectId}/firestore/rules`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Firestore → Rules
+                  </a>{" "}
+                  for project <code className="inline-code">{firebaseProjectId}</code>.
+                </li>
+                <li>
+                  Replace the rules with the block below (demo only — lock down before
+                  production).
+                </li>
+                <li>Click <strong>Publish</strong>, then refresh this app.</li>
+                <li>
+                  Optional: from this folder run{" "}
+                  <code className="inline-code">
+                    npx firebase-tools login
+                  </code>{" "}
+                  then{" "}
+                  <code className="inline-code">
+                    npx firebase-tools deploy --only firestore:rules
+                  </code>
+                  .
+                </li>
+              </ol>
+              <pre className="firestore-rules-sample">{RULES_SAMPLE}</pre>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       <section className="dashboard-grid">
         <article className="panel panel-accent">
           <div className="panel-header">
@@ -44,12 +133,18 @@ function BuilderPage() {
               <span>Questions</span>
             </div>
             <div className="stat-card">
-              <strong>{demoForm.completionRate}%</strong>
+              <strong>
+                {responses.length ? `${liveStats.completionRate}%` : "—"}
+              </strong>
               <span>Completion rate</span>
             </div>
             <div className="stat-card">
-              <strong>{demoForm.avgTime}</strong>
+              <strong>{liveStats.avgTime}</strong>
               <span>Avg. completion</span>
+            </div>
+            <div className="stat-card">
+              <strong>{liveStats.total}</strong>
+              <span>Responses (live)</span>
             </div>
           </div>
 
@@ -98,10 +193,13 @@ function BuilderPage() {
           </ul>
 
           <div className="preview-card">
-            <span className="panel-kicker">Next upgrades</span>
+            <span className="panel-kicker">Data layer</span>
             <p>
-              Firebase is configured, so the next step would be saving forms and
-              responses to Firestore instead of using demo data.
+              Responses are stored in Cloud Firestore under{" "}
+              <code className="inline-code">
+                forms/{demoForm.id}/responses
+              </code>
+              . Analytics updates in real time.
             </p>
           </div>
         </aside>

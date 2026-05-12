@@ -48,6 +48,11 @@ export const demoForm = {
   ],
 };
 
+export function getFormById(id) {
+  if (id === demoForm.id) return demoForm;
+  return null;
+}
+
 export const analyticsSummary = {
   responsesByDay: [
     { day: "Mon", responses: 12 },

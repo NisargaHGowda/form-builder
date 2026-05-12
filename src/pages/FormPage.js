@@ -1,22 +1,100 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { demoForm } from "../data/formData";
+import { useEffect, useRef, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { getFormById } from "../data/formData";
+import { saveResponse } from "../services/submissions";
+
+function validateRequired(form, answers) {
+  for (const q of form.questions) {
+    if (!q.required) continue;
+    const v = answers[q.id];
+    if (q.type === "multipleChoice" || q.type === "rating") {
+      if (v === undefined || v === null || v === "") {
+        return `Please answer: ${q.title}`;
+      }
+    } else if (!v || (typeof v === "string" && !v.trim())) {
+      return `Please answer: ${q.title}`;
+    }
+  }
+  return null;
+}
 
 function FormPage() {
+  const { id } = useParams();
+  const form = id ? getFormById(id) : null;
+
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [fieldError, setFieldError] = useState(null);
+  const [savedDocId, setSavedDocId] = useState(null);
+  const openedAtRef = useRef(null);
+
+  useEffect(() => {
+    openedAtRef.current = Date.now();
+  }, [id]);
 
   const updateAnswer = (questionId, value) => {
+    setFieldError(null);
     setAnswers((current) => ({
       ...current,
       [questionId]: value,
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setSubmitted(true);
+    setSubmitError(null);
+    if (!form) return;
+
+    const validationError = validateRequired(form, answers);
+    if (validationError) {
+      setFieldError(validationError);
+      return;
+    }
+
+    const durationMs =
+      openedAtRef.current != null
+        ? Math.max(0, Date.now() - openedAtRef.current)
+        : undefined;
+
+    setSubmitting(true);
+    try {
+      const docRef = await saveResponse(form.id, {
+        answers,
+        durationMs,
+      });
+      setSavedDocId(docRef.id);
+      setSubmitted(true);
+    } catch (err) {
+      setSavedDocId(null);
+      setSubmitError(
+        err?.code === "permission-denied"
+          ? "Firestore blocked this write (permission-denied). Check Rules and App Check for your web app."
+          : err?.message ||
+              "Could not save your response. Check Firestore rules and your connection."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (!form) {
+    return (
+      <main className="app-shell">
+        <section className="hero-card compact">
+          <span className="eyebrow">Not found</span>
+          <h1>Unknown form</h1>
+          <p>No form is registered for this link.</p>
+          <div className="hero-actions">
+            <Link className="primary-btn" to="/">
+              Back to builder
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   if (submitted) {
     return (
@@ -25,11 +103,19 @@ function FormPage() {
           <span className="eyebrow">Submission captured</span>
           <h1>Response recorded</h1>
           <p>
-            This demo currently stores answers in local state. The next step is
-            to send them to Firestore for real analytics.
+            Your answers were saved to Firestore. In the console, open the{" "}
+            <strong>responses</strong> subcollection under{" "}
+            <code className="inline-code">{form.id}</code>, then refresh if you
+            don’t see the new row yet.
           </p>
+          {savedDocId ? (
+            <p className="saved-doc-hint">
+              Document id:{" "}
+              <code className="inline-code">{savedDocId}</code>
+            </p>
+          ) : null}
           <div className="hero-actions">
-            <Link className="primary-btn" to={`/analytics/${demoForm.id}`}>
+            <Link className="primary-btn" to={`/analytics/${form.id}`}>
               Review analytics
             </Link>
             <Link className="secondary-btn" to="/">
@@ -46,12 +132,18 @@ function FormPage() {
       <section className="form-stage">
         <div className="form-intro">
           <span className="eyebrow">Live form preview</span>
-          <h1>{demoForm.title}</h1>
-          <p>{demoForm.subtitle}</p>
+          <h1>{form.title}</h1>
+          <p>{form.subtitle}</p>
         </div>
 
+        {(fieldError || submitError) && (
+          <p className="form-error" role="alert">
+            {fieldError || submitError}
+          </p>
+        )}
+
         <form className="form-stack" onSubmit={handleSubmit}>
-          {demoForm.questions.map((question) => (
+          {form.questions.map((question) => (
             <label className="response-card" key={question.id}>
               <div className="response-copy">
                 <span className="type-chip subtle">
@@ -140,8 +232,12 @@ function FormPage() {
             <Link className="secondary-btn" to="/">
               Back to builder
             </Link>
-            <button className="primary-btn" type="submit">
-              Submit response
+            <button
+              className="primary-btn"
+              type="submit"
+              disabled={submitting}
+            >
+              {submitting ? "Submitting…" : "Submit response"}
             </button>
           </div>
         </form>

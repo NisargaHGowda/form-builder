@@ -87,11 +87,17 @@
   color: #f4f7fb;
 }
 
-.primary-btn:hover,
+.primary-btn:hover:not(:disabled),
 .secondary-btn:hover,
 .choice-pill:hover,
 .rating-pill:hover {
   transform: translateY(-1px);
+}
+
+.primary-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .dashboard-grid,
@@ -308,15 +314,99 @@
 
 .chart-panel {
   min-height: 360px;
+  min-width: 0;
+}
+
+.analytics-grid .chart-panel {
+  /* Let grid items shrink so Recharts can read a real width */
+  min-width: 0;
 }
 
 .chart-wrap {
   width: 100%;
+  min-width: 0;
   height: 280px;
+  min-height: 280px;
 }
 
 .span-two {
   grid-column: span 2;
+}
+
+.form-error {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(255, 107, 107, 0.12);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+  color: #ffb4b4;
+  font-size: 0.95rem;
+}
+
+.form-error.banner,
+.form-error-banner {
+  margin-bottom: 20px;
+}
+
+.form-error-banner {
+  margin-top: 0;
+}
+
+.firestore-help {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: #c5d5e0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.firestore-help ol {
+  margin: 8px 0 12px;
+  padding-left: 1.25rem;
+}
+
+.firestore-help a {
+  color: #ffd166;
+}
+
+.firestore-rules-sample {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #9db1c1;
+}
+
+.chart-empty {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8ea3b5;
+  font-size: 0.95rem;
+}
+
+.inline-code {
+  font-size: 0.85em;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #ffd166;
+  word-break: break-all;
+}
+
+.saved-doc-hint {
+  margin: 12px 0 0;
+  color: #9db1c1;
+  font-size: 0.95rem;
 }
 
 @media (max-width: 960px) {

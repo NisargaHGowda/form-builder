@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Demo / prototype: tighten before production (use Firebase Auth + per-user rules).
+    match /forms/{formId}/responses/{responseId} {
+      allow read, write: if true;
+    }
+  }
+}
